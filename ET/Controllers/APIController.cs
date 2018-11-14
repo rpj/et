@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -19,10 +17,13 @@ namespace ET.Controllers
     [ApiController]
     public class V1Controller : ControllerBase
     {
-        private TableStorageController _tsc;
+        private readonly TableStorageController _tsc;
+        private readonly RSA _rsaCrypt;
+
         public V1Controller(IConfiguration config)
         {
             _tsc = new TableStorageController(config);
+            _rsaCrypt = RSA.Create();
         }
 
         [HttpPost]

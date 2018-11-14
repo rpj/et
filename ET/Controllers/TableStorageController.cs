@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using System.Net;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure;
 using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Auth;
 using Microsoft.WindowsAzure.Storage.Table;
 using Microsoft.Extensions.Configuration;
 
@@ -14,18 +10,19 @@ namespace ET.Controllers
     [Serializable]
     public class TableStorageEntity : TableEntity
     {
-        private static DateTime _epoch = new DateTime(2001, 1, 1);
-        public TableStorageEntity(Guid entityId, DateTime msgTime)
+        private static readonly DateTime _epoch = new DateTime(2001, 1, 1);
+
+        public TableStorageEntity(Guid entityId, DateTime timestamp)
         {
-            Timestamp = DateTime.UtcNow;
-            PartitionKey = entityId.ToString();
-            RowKey = (Timestamp.Ticks - _epoch.Ticks).ToString();
             Id = entityId;
-            MsgTime = msgTime;
+            PostTime = timestamp;
+            Timestamp = DateTime.UtcNow;
+            PartitionKey = Id.ToString();
+            RowKey = (Timestamp.Ticks - _epoch.Ticks).ToString();
         }
 
         public Guid Id { get; set; }
-        public DateTime MsgTime { get; set; }
+        public DateTime PostTime { get; set; }
         public string Data { get; set; }
     }
 
@@ -43,15 +40,20 @@ namespace ET.Controllers
                 throw new InvalidProgramException("No Azure storage configuration specified");
             }
 
-            CloudStorageAccount storageAccount = CloudStorageAccount.Parse(azStorageConnStr);
+            Init(azStorageConnStr, tableName);
+        }
+
+        private async void Init(string azStorageConnStr, string tableName)
+        {
+            var storageAccount = CloudStorageAccount.Parse(azStorageConnStr);
             _tableRef = storageAccount.CreateCloudTableClient().GetTableReference(tableName);
-            _tableRef.CreateIfNotExistsAsync();
+            await _tableRef.CreateIfNotExistsAsync();
         }
 
         public async void Add(TableStorageEntity newEntity)
         {
-            TableResult tRes = await _tableRef.ExecuteAsync(TableOperation.Insert(newEntity));
-            if (tRes.HttpStatusCode > 300)
+            var tRes = await _tableRef.ExecuteAsync(TableOperation.Insert(newEntity));
+            if (tRes.HttpStatusCode != (int)HttpStatusCode.OK)
             {
                 throw new Exception($"Bad 'add': {tRes.HttpStatusCode}");
             }
