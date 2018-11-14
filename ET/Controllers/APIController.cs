@@ -33,10 +33,5 @@ namespace ET.Controllers
                 Data = value.Data
             });
         }
-        
-        [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
-        {
-        }
     }
 }
