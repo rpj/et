@@ -14,11 +14,12 @@ namespace ET.Controllers
     [Serializable]
     public class TableStorageEntity : TableEntity
     {
+        private static DateTime _epoch = new DateTime(2001, 1, 1);
         public TableStorageEntity(Guid entityId, DateTime msgTime)
         {
-            PartitionKey = entityId.ToString();
-            RowKey = msgTime.Ticks.ToString();
             Timestamp = DateTime.UtcNow;
+            PartitionKey = entityId.ToString();
+            RowKey = (Timestamp.Ticks - _epoch.Ticks).ToString();
             Id = entityId;
             MsgTime = msgTime;
         }
