@@ -53,7 +53,7 @@ namespace ET.Controllers
         public async void Add(TableStorageEntity newEntity)
         {
             var tRes = await _tableRef.ExecuteAsync(TableOperation.Insert(newEntity));
-            if (tRes.HttpStatusCode != (int)HttpStatusCode.OK)
+            if (!(tRes.HttpStatusCode < (int)HttpStatusCode.Ambiguous))
             {
                 throw new Exception($"Bad 'add': {tRes.HttpStatusCode}");
             }
