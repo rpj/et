@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration.AzureKeyVault;
 using Microsoft.Extensions.Logging;
 
 namespace ET
@@ -19,6 +20,11 @@ namespace ET
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((context, config) =>
+                {
+                    var bCfg = config.Build();
+                    config.AddAzureKeyVault(bCfg["AzureKeyVaultUri"], bCfg["AzureAppId"], bCfg["AzureAppKey"]);
+                })
                 .UseStartup<Startup>();
     }
 }
