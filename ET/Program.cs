@@ -15,17 +15,23 @@ namespace ET
 {
     public class Program
     {
-        private static readonly Dictionary<string, KeyItem> Keys = new Dictionary<string, KeyItem>();
+        private struct Key
+        {
+            public KeyItem Item;
+            public KeyBundle Bundle;
+        };
+
+        private static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
 
         public static void Main(string[] args)
         {
             CreateWebHostBuilder(args).Build().Run();
         }
 
-        private static async void DiscoverAvailableKeys(string kvUri, IKeyVaultClient kvClient)
+        private static async void DiscoverAvailableKeysAsync(string kvUri, IKeyVaultClient kvClient)
         {
             var keysResponse = await kvClient.GetKeysWithHttpMessagesAsync(kvUri);
-            if (keysResponse.Response.StatusCode != HttpStatusCode.OK)
+            if (!keysResponse.Response.IsSuccessStatusCode)
             {
                 throw new InvalidProgramException();
             }
@@ -35,8 +41,22 @@ namespace ET
                 while (respBodyEnum.MoveNext())
                 {
                     var cur = respBodyEnum.Current;
-                    Keys[cur.Kid] = cur;
-                    Console.WriteLine($"Found key at {cur.Kid}");
+                    var keyData =
+                        await kvClient.GetKeyWithHttpMessagesAsync(kvUri, cur.Identifier.Name, cur.Identifier.Version);
+
+                    if (keyData.Response.IsSuccessStatusCode)
+                    {
+                        lock (Keys)
+                        {
+                            Keys[cur.Identifier.Name] = new Key()
+                            {
+                                Item = cur,
+                                Bundle = keyData.Body
+                            };
+                        }
+
+                        Console.WriteLine($"Found key '{cur.Identifier.Name}'");
+                    }
                 }
             }
         }
@@ -57,7 +77,7 @@ namespace ET
                     new KeyVaultClient.AuthenticationCallback(tokenProvider.KeyVaultTokenCallback));
 
             config.AddAzureKeyVault(kvUri, kvClient, new DefaultKeyVaultSecretManager());
-            DiscoverAvailableKeys(kvUri, kvClient);
+            DiscoverAvailableKeysAsync(kvUri, kvClient);
         }
 
         public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
