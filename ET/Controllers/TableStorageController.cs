@@ -14,14 +14,12 @@ namespace ET.Controllers
 
         public TableStorageEntity(Guid entityId, DateTime timestamp)
         {
-            Id = entityId;
             PostTime = timestamp;
             Timestamp = DateTime.UtcNow;
-            PartitionKey = Id.ToString();
+            PartitionKey = entityId.ToString();
             RowKey = (Timestamp.Ticks - _epoch.Ticks).ToString();
         }
-
-        public Guid Id { get; set; }
+        
         public DateTime PostTime { get; set; }
         public string Data { get; set; }
     }
