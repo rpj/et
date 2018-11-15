@@ -25,13 +25,11 @@ namespace ET.Controllers
         [HttpGet("{plaintext}")]
         public void Get(string plaintext)
         {
-            Console.WriteLine($"GOT plaintext! {plaintext}");
-            Console.WriteLine($"POST THAT SHIT WITH {_appGuid}");
             Post(new APIv1Post()
             {
                 Id = _appGuid,
                 Timestamp = DateTime.Now,
-                Data = plaintext // TODO: ENC THIS WITH THE PUBKEY FROM KV!!!!
+                Data = KeyVault.Encrypt("ET-key-0-rsa", plaintext)
             });
         }
 #endif
@@ -51,6 +49,17 @@ namespace ET.Controllers
         [HttpPost]
         public void Post([FromBody] APIv1Post value)
         {
+            try
+            {
+                Convert.FromBase64String(value.Data);
+            }
+            catch (FormatException fe)
+            {
+                // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
+                Console.WriteLine($"ERROR: Received unecrypted data! Encypting now, but this is still bad...");
+                value.Data = KeyVault.Encrypt("ET-key-0-rsa", value.Data);
+            }
+
             _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
             {
                 Data = value.Data
