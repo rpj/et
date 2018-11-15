@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using System.Net;
+using System.Text;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -55,7 +57,26 @@ namespace ET
                             };
                         }
 
-                        Console.WriteLine($"Found key '{cur.Identifier.Name}'");
+                        Console.WriteLine($"Found PubKey named '{cur.Identifier.Name}'");
+
+                        var rsaParams = keyData.Body.Key.ToRSAParameters();
+                        var writer = new System.IO.StringWriter();
+                        new Newtonsoft.Json.JsonSerializer().Serialize(writer, rsaParams);
+                        Console.WriteLine($"PubKey as string: {writer.ToString()}");
+                        var rsp = new RSACryptoServiceProvider();
+                        rsp.ImportParameters(rsaParams);
+
+                        var pText = Encoding.Unicode.GetBytes("plaintext! you can't see me!");
+                        var cB64Text = Convert.ToBase64String(rsp.Encrypt(pText, false));
+
+                        Console.WriteLine($"Crypted text: {cB64Text}");
+
+                        var cBytes = Convert.FromBase64String(cB64Text);
+                        var decRes = await kvClient.DecryptWithHttpMessagesAsync(kvUri, cur.Identifier.Name,
+                            cur.Identifier.Version, "RSA1_5", cBytes);
+                        var decText = Encoding.Unicode.GetString(decRes.Body.Result);
+
+                        Console.WriteLine($"Dec text (from THE CLOUDDDDDDD): {decText}");
                     }
                 }
             }
@@ -90,7 +111,7 @@ namespace ET
                 {
                     var env = context.HostingEnvironment;
 
-                    if (env.EnvironmentName == "Development" || env.EnvironmentName == "Debug")
+                    if (env.IsDevelopment())
                     {
                         config.AddDebug();
                         config.AddEventSourceLogger();
