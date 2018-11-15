@@ -53,7 +53,7 @@ namespace ET.Controllers
             {
                 Convert.FromBase64String(value.Data);
             }
-            catch (FormatException fe)
+            catch (FormatException)
             {
                 // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
                 Console.WriteLine($"ERROR: Received unecrypted data! Encypting now, but this is still bad...");
