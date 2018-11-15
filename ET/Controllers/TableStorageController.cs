@@ -10,7 +10,7 @@ namespace ET.Controllers
     [Serializable]
     public class TableStorageEntity : TableEntity
     {
-        private static readonly DateTime _epoch = new DateTime(2001, 1, 1);
+        private static readonly DateTime _epoch = new DateTime(2018, 1, 1);
 
         public TableStorageEntity(Guid entityId, DateTime timestamp)
         {
