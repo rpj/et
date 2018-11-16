@@ -10,14 +10,14 @@ namespace ET.Controllers
     [Serializable]
     public class TableStorageEntity : TableEntity
     {
-        private static readonly DateTime _epoch = new DateTime(2018, 1, 1);
+        private static readonly DateTime Epoch = new DateTime(2018, 1, 1);
 
         public TableStorageEntity(Guid entityId, DateTime timestamp)
         {
             PostTime = timestamp;
             Timestamp = DateTime.UtcNow;
             PartitionKey = entityId.ToString();
-            RowKey = (Timestamp.Ticks - _epoch.Ticks).ToString();
+            RowKey = (Timestamp.Ticks - Epoch.Ticks).ToString();
         }
         
         public DateTime PostTime { get; set; }
