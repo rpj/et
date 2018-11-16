@@ -32,7 +32,7 @@ namespace ET.Controllers
             {
                 Id = _appGuid,
                 Timestamp = DateTime.Now,
-                Data = KeyVault.Encrypt(_azConfig.KeyVault.DefaultKeyName, plaintext)
+                Data = KeyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(plaintext)
             });
         }
 #endif
@@ -62,7 +62,7 @@ namespace ET.Controllers
             {
                 // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
                 Console.WriteLine($"ERROR: Received unecrypted data! Encypting now, but this is still bad...");
-                value.Data = KeyVault.Encrypt(_azConfig.KeyVault.DefaultKeyName, value.Data);
+                value.Data = KeyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(value.Data);
             }
 
             _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)

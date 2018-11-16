@@ -13,8 +13,49 @@ namespace ET
 {
     public static class KeyVault
     {
-        public static string AzureVaultUri;
-        public static KeyVaultClient AzureClient;
+        public class Key
+        {
+            private readonly KeyItem Item;
+            private readonly KeyBundle Bundle;
+            private readonly RSAParameters AsRSAParams;
+            private readonly string VaultUri;
+
+            public string Name { get; }
+            public string Version { get; }
+
+            public Key(KeyItem item, KeyBundle bundle, string vaultUri)
+            {
+                Item = item;
+                Bundle = bundle;
+                VaultUri = vaultUri;
+                AsRSAParams = Bundle.Key.ToRSAParameters();
+                Name = Item.Identifier.Name;
+                Version = Item.Identifier.Version;
+            }
+
+            public async Task<string> Decrypt(string cryptText)
+            {
+                var cBytes = Convert.FromBase64String(cryptText);
+                var decRes = await AzureClient.DecryptWithHttpMessagesAsync(VaultUri, Name, Version, "RSA1_5", cBytes);
+                return Encoding.Unicode.GetString(decRes.Body.Result);
+            }
+
+            public string Encrypt(string plainText)
+            {
+                using (var rsp = new RSACryptoServiceProvider())
+                {
+                    rsp.ImportParameters(AsRSAParams);
+                    return Convert.ToBase64String(rsp.Encrypt(Encoding.Unicode.GetBytes(plainText), false));
+                }
+            }
+
+            public override string ToString()
+            {
+                return $"Key<Name='{Name}' Version='{Version}'>";
+            }
+        };
+
+        public static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
 
         public static void AddKeyVaultToBuilder(IConfigurationBuilder config)
         {
@@ -34,44 +75,11 @@ namespace ET
             DiscoverAvailableKeysAsync();
         }
 
-        // TODO: Encrypt()/Decrypt() *really* should just be methods of Key (which needs to be abonafide class)
-        public static async Task<string> Decrypt(string keyId, string cryptText)
-        {
-            if (!Keys.ContainsKey(keyId))
-            {
-                return null;
-            }
+        #region Private
+        private static string AzureVaultUri;
+        private static KeyVaultClient AzureClient;
 
-            var cBytes = Convert.FromBase64String(cryptText);
-            var decRes = await AzureClient.DecryptWithHttpMessagesAsync(AzureVaultUri, 
-                Keys[keyId].Item.Identifier.Name, Keys[keyId].Item.Identifier.Version, "RSA1_5", cBytes);
-            return Encoding.Unicode.GetString(decRes.Body.Result);
-        }
-
-        public static string Encrypt(string keyId, string plainText)
-        {
-            if (!Keys.ContainsKey(keyId))
-            {
-                return null;
-            }
-
-            using (var rsp = new RSACryptoServiceProvider())
-            {
-                rsp.ImportParameters(Keys[keyId].AsRSAParams);
-                return Convert.ToBase64String(rsp.Encrypt(Encoding.Unicode.GetBytes(plainText), false));
-            }
-        }
-
-        private struct Key
-        {
-            public KeyItem Item;
-            public KeyBundle Bundle;
-            public RSAParameters AsRSAParams;
-        };
-
-        private static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
-
-        public static async void DiscoverAvailableKeysAsync()
+        private static async void DiscoverAvailableKeysAsync()
         {
             var keysResponse = await AzureClient.GetKeysWithHttpMessagesAsync(AzureVaultUri);
             if (!keysResponse.Response.IsSuccessStatusCode)
@@ -92,23 +100,29 @@ namespace ET
                     {
                         lock (Keys)
                         {
-                            Keys[cur.Identifier.Name] = new Key()
-                            {
-                                Item = cur,
-                                Bundle = keyData.Body,
-                                AsRSAParams = keyData.Body.Key.ToRSAParameters()
-                            };
+                            Keys[cur.Identifier.Name] = new Key(cur, keyData.Body, AzureVaultUri);
                         }
 
-#if DEBUG
-                        var sw = new System.IO.StringWriter();
-                        new Newtonsoft.Json.JsonSerializer().Serialize(sw, Keys[cur.Identifier.Name].AsRSAParams);
-                        Console.WriteLine($"Key name: {cur.Identifier.Name}");
-                        Console.WriteLine($"RSA JSON: {sw.ToString()}");
-#endif
+                        _DEBUG_KeyEncDecVerify(Keys[cur.Identifier.Name]);
                     }
                 }
             }
         }
+
+        private static void _DEBUG_KeyEncDecVerify(Key key)
+        {
+#if DEBUG
+            var plaintext = "123456789abcdefghijklmnopqrstuvqyxz";
+            var dec = key.Decrypt(key.Encrypt(plaintext)).Result;
+
+            if (plaintext != dec)
+            {
+                throw new InvalidProgramException($"Bad unit test! {key}");
+            }
+
+            Console.WriteLine($"Unit test of {key} passed");
+#endif
+        }
+        #endregion
     }
 }
