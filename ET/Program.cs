@@ -9,7 +9,7 @@ namespace ET
 {
     public static class Program
     {
-        private static readonly KeyVault _keyVault = new KeyVault();
+        private static readonly KeyVault KeyVault = new KeyVault();
 
         public static void Main(string[] args)
         {
@@ -31,8 +31,8 @@ namespace ET
 #endif
                     }
                 })
-                .ConfigureAppConfiguration((context, config) => { _keyVault.AddKeyVaultToBuilder(config); })
-                .ConfigureServices((context, services) => { services.AddSingleton<IKeyVault>(_keyVault); })
+                .ConfigureAppConfiguration((context, config) => { KeyVault.AddKeyVaultToBuilder(config); })
+                .ConfigureServices((context, services) => { services.AddSingleton<IKeyVault>(KeyVault); })
                 .UseStartup<Startup>();
     }
 }
