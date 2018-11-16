@@ -1,7 +1,8 @@
 ﻿using System;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using ET.Config;
 
 namespace ET.Controllers
 {
@@ -19,6 +20,8 @@ namespace ET.Controllers
     {
         private readonly TableStorageController _tsc;
         private readonly RSACryptoServiceProvider _rsaCrypt;
+        private readonly AzureConfig _azConfig;
+
 #if DEBUG
         private readonly Guid _appGuid;
 
@@ -29,17 +32,19 @@ namespace ET.Controllers
             {
                 Id = _appGuid,
                 Timestamp = DateTime.Now,
-                Data = KeyVault.Encrypt("ET-key-0-rsa", plaintext)
+                Data = KeyVault.Encrypt(_azConfig.KeyVault.DefaultKeyName, plaintext)
             });
         }
 #endif
 
-        public V1Controller(IConfiguration config)
+        public V1Controller(IOptions<AzureConfig> config)
         {
-            _tsc = new TableStorageController(config);
+            _azConfig = config.Value as AzureConfig;
+            _tsc = new TableStorageController(_azConfig.Storage);
             _rsaCrypt = new RSACryptoServiceProvider();
+
 #if DEBUG
-            if (!Guid.TryParse(config["AzureAppId"], out _appGuid))
+            if (!Guid.TryParse(_azConfig.AppId, out _appGuid))
             {
                 throw new Exception();
             }
@@ -57,7 +62,7 @@ namespace ET.Controllers
             {
                 // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
                 Console.WriteLine($"ERROR: Received unecrypted data! Encypting now, but this is still bad...");
-                value.Data = KeyVault.Encrypt("ET-key-0-rsa", value.Data);
+                value.Data = KeyVault.Encrypt(_azConfig.KeyVault.DefaultKeyName, value.Data);
             }
 
             _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)

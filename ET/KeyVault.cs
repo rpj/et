@@ -16,10 +16,9 @@ namespace ET
         public static string AzureVaultUri;
         public static KeyVaultClient AzureClient;
 
-        public static void Configure(IConfigurationBuilder config)
+        public static void AddKeyVaultToBuilder(IConfigurationBuilder config)
         {
-            var bCfg = config.Build();
-            var kvUri = bCfg["AzureKeyVaultUri"];
+            var kvUri = config.Build().GetSection("Azure:KeyVault:Uri").Value as string;
 
             if (string.IsNullOrWhiteSpace(kvUri))
             {
@@ -72,7 +71,7 @@ namespace ET
 
         private static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
 
-        private static async void DiscoverAvailableKeysAsync()
+        public static async void DiscoverAvailableKeysAsync()
         {
             var keysResponse = await AzureClient.GetKeysWithHttpMessagesAsync(AzureVaultUri);
             if (!keysResponse.Response.IsSuccessStatusCode)

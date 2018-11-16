@@ -16,7 +16,7 @@ namespace ET
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureAppConfiguration((context, config) =>
                 {
-                    KeyVault.Configure(config);
+                    KeyVault.AddKeyVaultToBuilder(config);
                 })
                 .ConfigureLogging((context, config) =>
                 {
