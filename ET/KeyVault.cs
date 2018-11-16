@@ -15,11 +15,6 @@ namespace ET
     {
         public class Key
         {
-            private readonly KeyItem Item;
-            private readonly KeyBundle Bundle;
-            private readonly RSAParameters AsRSAParams;
-            private readonly string VaultUri;
-
             public string Name { get; }
             public string Version { get; }
 
@@ -53,6 +48,11 @@ namespace ET
             {
                 return $"Key<Name='{Name}' Version='{Version}'>";
             }
+
+            private readonly KeyItem Item;
+            private readonly KeyBundle Bundle;
+            private readonly RSAParameters AsRSAParams;
+            private readonly string VaultUri;
         };
 
         public static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
