@@ -56,9 +56,20 @@ namespace ET
             private readonly KeyVault _vault;
         };
         
-        public readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
+        private readonly Dictionary<string, Key> _keys = new Dictionary<string, Key>();
         private string _uri;
         private KeyVaultClient _client;
+
+        public Key this[string keyName]
+        {
+            get
+            {
+                lock (_keys)
+                {
+                    return _keys[keyName];
+                }
+            }
+        }
 
         public void AddKeyVaultToBuilder(IConfigurationBuilder config)
         {
@@ -99,10 +110,10 @@ namespace ET
 
                     if (keyData.Response.IsSuccessStatusCode)
                     {
-                        lock (Keys)
+                        lock (_keys)
                         {
-                            Keys[cur.Identifier.Name] = new Key(cur, keyData.Body, this);
-                            _DEBUG_KeyEncDecVerify(Keys[cur.Identifier.Name]);
+                            _keys[cur.Identifier.Name] = new Key(cur, keyData.Body, this);
+                            _DEBUG_KeyEncDecVerify(_keys[cur.Identifier.Name]);
                         }
                     }
                 }
