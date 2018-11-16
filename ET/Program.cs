@@ -1,23 +1,23 @@
 ﻿using System;
 using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.CodeAnalysis;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
 namespace ET
 {
-    public class Program
+    public static class Program
     {
+        private static readonly KeyVault _keyVault = new KeyVault();
+
         public static void Main(string[] args)
         {
             CreateWebHostBuilder(args).Build().Run();
         }
 
-        public static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
+        private static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
             WebHost.CreateDefaultBuilder(args)
-                .ConfigureAppConfiguration((context, config) =>
-                {
-                    KeyVault.AddKeyVaultToBuilder(config);
-                })
                 .ConfigureLogging((context, config) =>
                 {
                     config.AddConsole();
@@ -31,6 +31,8 @@ namespace ET
 #endif
                     }
                 })
+                .ConfigureAppConfiguration((context, config) => { _keyVault.AddKeyVaultToBuilder(config); })
+                .ConfigureServices((context, services) => { services.AddSingleton<IKeyVault>(_keyVault); })
                 .UseStartup<Startup>();
     }
 }

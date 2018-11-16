@@ -11,27 +11,30 @@ using Microsoft.Extensions.Configuration.AzureKeyVault;
 
 namespace ET
 {
-    public static class KeyVault
+    public interface IKeyVault
+    {
+        void AddKeyVaultToBuilder(IConfigurationBuilder config);
+    }
+
+    public class KeyVault : IKeyVault
     {
         public class Key
         {
             public string Name { get; }
             public string Version { get; }
 
-            public Key(KeyItem item, KeyBundle bundle, string vaultUri)
+            public Key(KeyItem item, KeyBundle bundle, KeyVault vault)
             {
-                Item = item;
-                Bundle = bundle;
-                VaultUri = vaultUri;
-                AsRSAParams = Bundle.Key.ToRSAParameters();
-                Name = Item.Identifier.Name;
-                Version = Item.Identifier.Version;
+                _vault = vault;
+                _rsaParams = bundle.Key.ToRSAParameters();
+                Name = item.Identifier.Name;
+                Version = item.Identifier.Version;
             }
 
             public async Task<string> Decrypt(string cryptText)
             {
                 var cBytes = Convert.FromBase64String(cryptText);
-                var decRes = await AzureClient.DecryptWithHttpMessagesAsync(VaultUri, Name, Version, "RSA1_5", cBytes);
+                var decRes = await _vault._client.DecryptWithHttpMessagesAsync(_vault._uri, Name, Version, "RSA1_5", cBytes);
                 return Encoding.Unicode.GetString(decRes.Body.Result);
             }
 
@@ -39,7 +42,7 @@ namespace ET
             {
                 using (var rsp = new RSACryptoServiceProvider())
                 {
-                    rsp.ImportParameters(AsRSAParams);
+                    rsp.ImportParameters(_rsaParams);
                     return Convert.ToBase64String(rsp.Encrypt(Encoding.Unicode.GetBytes(plainText), false));
                 }
             }
@@ -49,15 +52,15 @@ namespace ET
                 return $"Key<Name='{Name}' Version='{Version}'>";
             }
 
-            private readonly KeyItem Item;
-            private readonly KeyBundle Bundle;
-            private readonly RSAParameters AsRSAParams;
-            private readonly string VaultUri;
+            private readonly RSAParameters _rsaParams;
+            private readonly KeyVault _vault;
         };
+        
+        public readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
+        private string _uri;
+        private KeyVaultClient _client;
 
-        public static readonly Dictionary<string, Key> Keys = new Dictionary<string, Key>();
-
-        public static void AddKeyVaultToBuilder(IConfigurationBuilder config)
+        public void AddKeyVaultToBuilder(IConfigurationBuilder config)
         {
             var kvUri = config.Build().GetSection("Azure:KeyVault:Uri").Value as string;
 
@@ -66,22 +69,20 @@ namespace ET
                 throw new InvalidProgramException("Bad Azure app configuration!");
             }
 
-            AzureVaultUri = kvUri;
-            AzureClient = new KeyVaultClient(
+            _uri = kvUri;
+            _client = new KeyVaultClient(
                 new KeyVaultClient.AuthenticationCallback(
                     new AzureServiceTokenProvider().KeyVaultTokenCallback));
             
-            config.AddAzureKeyVault(AzureVaultUri, AzureClient, new DefaultKeyVaultSecretManager());
+            config.AddAzureKeyVault(_uri, _client, new DefaultKeyVaultSecretManager());
             DiscoverAvailableKeysAsync();
         }
 
         #region Private
-        private static string AzureVaultUri;
-        private static KeyVaultClient AzureClient;
 
-        private static async void DiscoverAvailableKeysAsync()
+        private async void DiscoverAvailableKeysAsync()
         {
-            var keysResponse = await AzureClient.GetKeysWithHttpMessagesAsync(AzureVaultUri);
+            var keysResponse = await _client.GetKeysWithHttpMessagesAsync(_uri);
             if (!keysResponse.Response.IsSuccessStatusCode)
             {
                 throw new InvalidProgramException();
@@ -93,17 +94,16 @@ namespace ET
                 {
                     var cur = respBodyEnum.Current;
                     var keyData =
-                        await AzureClient.GetKeyWithHttpMessagesAsync(AzureVaultUri, 
+                        await _client.GetKeyWithHttpMessagesAsync(_uri, 
                         cur.Identifier.Name, cur.Identifier.Version);
 
                     if (keyData.Response.IsSuccessStatusCode)
                     {
                         lock (Keys)
                         {
-                            Keys[cur.Identifier.Name] = new Key(cur, keyData.Body, AzureVaultUri);
+                            Keys[cur.Identifier.Name] = new Key(cur, keyData.Body, this);
+                            _DEBUG_KeyEncDecVerify(Keys[cur.Identifier.Name]);
                         }
-
-                        _DEBUG_KeyEncDecVerify(Keys[cur.Identifier.Name]);
                     }
                 }
             }

@@ -19,8 +19,8 @@ namespace ET.Controllers
     public class V1Controller : ControllerBase
     {
         private readonly TableStorageController _tsc;
-        private readonly RSACryptoServiceProvider _rsaCrypt;
         private readonly AzureConfig _azConfig;
+        private readonly KeyVault _keyVault;
 
 #if DEBUG
         private readonly Guid _appGuid;
@@ -32,16 +32,16 @@ namespace ET.Controllers
             {
                 Id = _appGuid,
                 Timestamp = DateTime.Now,
-                Data = KeyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(plaintext)
+                Data = _keyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(plaintext)
             });
         }
 #endif
 
-        public V1Controller(IOptions<AzureConfig> config)
+        public V1Controller(IOptions<AzureConfig> config, IKeyVault keyVault)
         {
-            _azConfig = config.Value as AzureConfig;
+            _azConfig = config.Value;
             _tsc = new TableStorageController(_azConfig.Storage);
-            _rsaCrypt = new RSACryptoServiceProvider();
+            _keyVault = keyVault as KeyVault;
 
 #if DEBUG
             if (!Guid.TryParse(_azConfig.AppId, out _appGuid))
@@ -56,13 +56,16 @@ namespace ET.Controllers
         {
             try
             {
-                Convert.FromBase64String(value.Data);
+                // try to convert, ignoring the result, as we only care
+                // whether the data is valid Base64 or not (and not *what* the data is
+                // as if it *is* encoded it should also be encrypted!)
+                var _ = Convert.FromBase64String(value.Data);
             }
             catch (FormatException)
             {
                 // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
-                Console.WriteLine($"ERROR: Received unecrypted data! Encypting now, but this is still bad...");
-                value.Data = KeyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(value.Data);
+                Console.WriteLine($"ERROR: Received unencrypted data! Encrypting now, but this is still bad...");
+                value.Data = _keyVault.Keys[_azConfig.KeyVault.DefaultKeyName].Encrypt(value.Data);
             }
 
             _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
