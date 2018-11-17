@@ -3,6 +3,7 @@ using System.Net;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
+using Microsoft.Extensions.Configuration;
 using ET.Config;
 
 namespace ET.Controllers
@@ -28,21 +29,25 @@ namespace ET.Controllers
     {
         private CloudTable _tableRef;
 
-        public TableStorageController(AzureConfig.StorageConfig config)
+        public TableStorageController(IConfiguration appConfig, AzureConfig.StorageConfig azConfig)
         {
-            if (string.IsNullOrWhiteSpace(config.ConnectionString) || 
-                string.IsNullOrWhiteSpace(config.Table.Name))
+            string connStr = null;
+            if (string.IsNullOrWhiteSpace(azConfig.Table.Name) || 
+                string.IsNullOrWhiteSpace(azConfig.ConnectionStringSecretName) || 
+                (connStr = appConfig.GetSection(azConfig.ConnectionStringSecretName).Value) == null)
             {
                 throw new InvalidProgramException("No Azure storage configuration specified");
             }
 
-            Init(config);
+            Console.Error.WriteLine($"ConnectionString: {connStr}");
+            Console.Error.WriteLine($"TableName: {azConfig.Table.Name}");
+            Init(connStr, azConfig.Table.Name);
         }
 
-        private async void Init(AzureConfig.StorageConfig config)
+        private async void Init(string connectionString, string tableName)
         {
-            var storageAccount = CloudStorageAccount.Parse(config.ConnectionString);
-            _tableRef = storageAccount.CreateCloudTableClient().GetTableReference(config.Table.Name);
+            var storageAccount = CloudStorageAccount.Parse(connectionString);
+            _tableRef = storageAccount.CreateCloudTableClient().GetTableReference(tableName);
             await _tableRef.CreateIfNotExistsAsync();
         }
 

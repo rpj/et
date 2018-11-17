@@ -45,7 +45,7 @@ namespace ET.Controllers
         {
             _azConfig = config.Value;
             _appConfig = appConfig;
-            _tsc = new TableStorageController(_azConfig.Storage);
+            _tsc = new TableStorageController(_appConfig, _azConfig.Storage);
             _keyVault = keyVault as KeyVault;
 
             Console.Error.WriteLine($"V1Controller has mode {_appConfig["ASPNETCORE_ENVIRONMENT"]}");

@@ -17,7 +17,7 @@
                     public string Name { get; set; }
                 }
 
-                public string ConnectionString { get; set; }
+                public string ConnectionStringSecretName { get; set; }
                 public TableConfig Table { get; set; }
             }
 
