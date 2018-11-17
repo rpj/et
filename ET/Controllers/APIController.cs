@@ -3,6 +3,9 @@ using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using ET.Config;
+using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.IdentityModel.Protocols;
+using Microsoft.Extensions.Configuration;
 
 namespace ET.Controllers
 {
@@ -21,6 +24,7 @@ namespace ET.Controllers
         private readonly TableStorageController _tsc;
         private readonly AzureConfig _azConfig;
         private readonly KeyVault _keyVault;
+        private readonly IConfiguration _appConfig;
 
 #if DEBUG
         private readonly Guid _appGuid;
@@ -37,11 +41,14 @@ namespace ET.Controllers
         }
 #endif
 
-        public V1Controller(IOptions<AzureConfig> config, IKeyVault keyVault)
+        public V1Controller(IConfiguration appConfig, IOptions<AzureConfig> config, IKeyVault keyVault)
         {
             _azConfig = config.Value;
+            _appConfig = appConfig;
             _tsc = new TableStorageController(_azConfig.Storage);
             _keyVault = keyVault as KeyVault;
+
+            Console.Error.WriteLine($"V1Controller has mode {_appConfig["ASPNETCORE_ENVIRONMENT"]}");
 
 #if DEBUG
             if (!Guid.TryParse(_azConfig.AppId, out _appGuid))
@@ -54,24 +61,32 @@ namespace ET.Controllers
         [HttpPost]
         public void Post([FromBody] APIv1Post value)
         {
+            var okToPost = true;// WHYCANTIGETDEVMODEONDEPLOY!?!?! false;
+
             try
             {
                 // try to convert, ignoring the result, as we only care
                 // whether the data is valid Base64 or not (and not *what* the data is
                 // as if it *is* encoded it should also be encrypted!)
-                var _ = Convert.FromBase64String(value.Data);
+                okToPost = Convert.FromBase64String(value.Data).Length != 0;
             }
             catch (FormatException)
             {
-                // TODO: log as a real error for analytics, etc... though really, shouldn't ever happen!
-                Console.WriteLine($"ERROR: Received unencrypted data! Encrypting now, but this is still bad...");
-                value.Data = _keyVault[_azConfig.KeyVault.DefaultKeyName].Encrypt(value.Data);
             }
 
-            _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
+            if (okToPost || _appConfig["ASPNETCORE_ENVIRONMENT"] == "Development")
             {
-                Data = value.Data
-            });
+                if (!okToPost)
+                {
+                    Console.Error.WriteLine($"WARNING: Posting unencrypted data in 'Development' mode!");
+                    Console.Error.WriteLine($"DATA:\n{value.Data}");
+                }
+
+                _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
+                {
+                    Data = value.Data
+                });
+            }
         }
 
     }
