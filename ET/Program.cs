@@ -12,7 +12,7 @@ namespace ET
 {
     public static class Program
     {
-        private static readonly KeyVault KeyVault = new KeyVault();
+        private static readonly IKeyVault KeyVault = new KeyVault();
 
         public static void Main(string[] args)
         {
@@ -26,6 +26,9 @@ namespace ET
             if ((args.Length > 0 && args[0] == "monitor") ||
                 Environment.GetEnvironmentVariable("ET_RUN_MONITOR") == "1")
             {
+                if (Environment.GetEnvironmentVariable("ET_DEPLOYED") == "1")
+                    throw new Exception("");
+
                 Console.WriteLine($"Entering monitor mode (via the " +
                     $"{((args.Length > 0 && args[0] == "monitor") ? "CLI" : "environment")})...");
 
@@ -45,6 +48,7 @@ namespace ET
                     .AddLogging()
                     .AddSingleton<IMonitorMode, MonitorMode>()
                     .AddSingleton<IRedisController, RedisController>()
+                    .AddSingleton(KeyVault)
                     .AddSingleton(configuration)
                     .Configure<AzureConfig>(configuration.GetSection("Azure"))
                     .BuildServiceProvider();

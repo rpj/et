@@ -26,9 +26,13 @@ namespace ET
                 Version = item.Identifier.Version;
             }
 
-            public async Task<string> Decrypt(string cryptText)
+            public async Task<string> Decrypt(string b64CryptText)
             {
-                var cBytes = Convert.FromBase64String(cryptText);
+                return await Decrypt(Convert.FromBase64String(b64CryptText));
+            }
+
+            public async Task<string> Decrypt(byte[] cBytes)
+            {
                 var decRes = await _vault._client.DecryptWithHttpMessagesAsync(_vault._uri, Name, Version, "RSA1_5", cBytes);
                 return Encoding.Unicode.GetString(decRes.Body.Result);
             }
