@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using ET.Config;
+using ET.Controllers;
 
 namespace ET
 {
@@ -43,6 +44,7 @@ namespace ET
                 var svcProv = new ServiceCollection()
                     .AddLogging()
                     .AddSingleton<IMonitorMode, MonitorMode>()
+                    .AddSingleton<IRedisController, RedisController>()
                     .AddSingleton(configuration)
                     .Configure<AzureConfig>(configuration.GetSection("Azure"))
                     .BuildServiceProvider();

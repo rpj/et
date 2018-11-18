@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Configuration;
 
 namespace ET
 {
@@ -35,6 +36,7 @@ namespace ET
 
             public class RedisConfig : ConnStringGetter
             {
+                public string ChannelName { get; set; }
             }
 
             public string AppId { get; set; }

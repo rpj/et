@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using ET.Config;
 using ET.Controllers;
 
@@ -13,29 +14,14 @@ namespace ET
 
     public class MonitorMode : IMonitorMode
     {
-        /* TODO: WHY CAN'T I MAKE THIS WORK WITH DI!?! */
-        public MonitorMode(IConfiguration appConfig, AzureConfig azConfig)
-        {
-            Console.WriteLine($"CTOR! {azConfig.Storage.ConnectionStringSecretName}");
-        }
-
         private readonly TableStorageController _tsc;
 
-        public MonitorMode(IConfiguration configuration)
+        public MonitorMode(IConfiguration appConfig, IOptions<AzureConfig> azConfig, IRedisController redis)
         {
-
-            var tableConfig = new AzureConfig.StorageConfig()
-            {
-                ConnectionStringSecretName = configuration.GetSection("Azure:Storage:ConnectionStringSecretName").Value,
-                Table = new AzureConfig.StorageConfig.TableConfig()
-                {
-                    Name = configuration.GetSection("Azure:Storage:Table:Name").Value
-                }
-            };
-
-            Console.WriteLine($"Connecting to table '{tableConfig.Table.Name}' " +
-                $"at DB specified by vault secret '{tableConfig.ConnectionStringSecretName}'...");
-            _tsc = new TableStorageController(configuration, tableConfig);
+            var storageConfig = azConfig.Value.Storage;
+            Console.WriteLine($"Connecting to table '{storageConfig.Table.Name}' " +
+                $"at DB specified by vault secret '{storageConfig.ConnectionStringSecretName}'...");
+            _tsc = new TableStorageController(appConfig, storageConfig);
         }
 
         public void Run()
