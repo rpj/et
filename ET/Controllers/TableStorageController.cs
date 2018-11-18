@@ -39,8 +39,7 @@ namespace ET.Controllers
         {
             string connStr = null;
             if (string.IsNullOrWhiteSpace(azConfig.Table.Name) || 
-                string.IsNullOrWhiteSpace(azConfig.ConnectionStringSecretName) || 
-                (connStr = appConfig.GetSection(azConfig.ConnectionStringSecretName).Value) == null)
+                string.IsNullOrWhiteSpace((connStr = azConfig.ConnectionString(appConfig))))
             {
                 throw new InvalidProgramException("No Azure storage configuration specified");
             }
