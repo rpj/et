@@ -39,9 +39,16 @@ namespace ET.Controllers
                 throw new InvalidProgramException("No Azure storage configuration specified");
             }
 
+#if DEBUG
             Console.Error.WriteLine($"ConnectionString: {connStr}");
             Console.Error.WriteLine($"TableName: {azConfig.Table.Name}");
+#endif
             Init(connStr, azConfig.Table.Name);
+        }
+
+        public TableStorageController(string connStr, string tableName)
+        {
+            Init(connStr, tableName);
         }
 
         private async void Init(string connectionString, string tableName)

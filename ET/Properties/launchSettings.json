@@ -34,6 +34,16 @@
         "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONVAULT": "https://ET-0-kv.vault.azure.net"
       },
       "applicationUrl": "https://localhost:5001;http://localhost:5000"
+    },
+    "ET - Monitor": {
+      "commandName": "Project",
+      "commandLineArgs": "-- monitor",
+      "environmentVariables": {
+        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONENABLED": "true",
+        "ET_RUN_MONITOR": "1",
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONVAULT": "https://ET-0-kv.vault.azure.net"
+      }
     }
   }
 }
