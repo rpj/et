@@ -15,6 +15,11 @@ namespace ET
 
         public static void Main(string[] args)
         {
+            Console.WriteLine("Starting...");
+#if DEBUG
+            Console.WriteLine("DEBUG is enabled");
+#endif
+
             Action runLambda = null;
 
             if ((args.Length > 0 && args[0] == "monitor") ||
@@ -23,15 +28,15 @@ namespace ET
                 Console.WriteLine($"Entering monitor mode (via the " +
                     $"{((args.Length > 0 && args[0] == "monitor") ? "CLI" : "environment")})...");
 
+                var ancEnv = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
                 var builder = new ConfigurationBuilder()
                  .SetBasePath(Directory.GetCurrentDirectory())
                  .AddEnvironmentVariables()
-                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
-                 .AddJsonFile($"appsettings.{Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json");
+                 .AddJsonFile("appsettings.json", optional: false)
+                 .AddJsonFile($"appsettings.{ancEnv}.json", optional: true);
 
                 Console.WriteLine("Configuring and querying Azure Key Vault...");
                 KeyVault.AddKeyVaultToBuilder(builder);
-
                 IConfiguration configuration = builder.Build();
 
                 Console.WriteLine("Configuring and building application runtime...");
@@ -46,12 +51,9 @@ namespace ET
             }
             else
             {
+                Console.WriteLine("Configuring web hosting environment...");
                 runLambda = () => { CreateWebHostBuilder(args).Build().Run(); };
             }
-            
-#if DEBUG
-            Console.WriteLine("DEBUG is enabled");
-#endif
 
             if (runLambda != null)
                 runLambda();
@@ -63,6 +65,7 @@ namespace ET
             WebHost.CreateDefaultBuilder(args)
                 .ConfigureLogging((context, config) =>
                 {
+                    Console.WriteLine("Configuring logging...");
                     config.AddConsole();
                     
                     if (context.HostingEnvironment.IsDevelopment())
@@ -70,12 +73,17 @@ namespace ET
                         config.AddEventSourceLogger();
 #if DEBUG
                         config.AddDebug();
-                        Console.WriteLine("DEBUG is enabled");
 #endif
                     }
                 })
-                .ConfigureAppConfiguration((context, config) => { KeyVault.AddKeyVaultToBuilder(config); })
-                .ConfigureServices((context, services) => { services.AddSingleton<IKeyVault>(KeyVault); })
+                .ConfigureAppConfiguration((context, config) => {
+                    Console.WriteLine("Configuring Azure Key Vault...");
+                    KeyVault.AddKeyVaultToBuilder(config);
+                })
+                .ConfigureServices((context, services) => {
+                    Console.WriteLine("Configuring services...");
+                    services.AddSingleton<IKeyVault>(KeyVault);
+                })
                 .UseStartup<Startup>();
     }
 }

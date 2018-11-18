@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading;
 using Microsoft.Extensions.Configuration;
 using ET.Config;
 using ET.Controllers;
@@ -12,11 +13,11 @@ namespace ET
 
     public class MonitorMode : IMonitorMode
     {
-        /* WHY CAN'T I MAKE THIS WORK WITH DI!?!
+        /* TODO: WHY CAN'T I MAKE THIS WORK WITH DI!?! */
         public MonitorMode(IConfiguration appConfig, AzureConfig azConfig)
         {
             Console.WriteLine($"CTOR! {azConfig.Storage.ConnectionStringSecretName}");
-        }*/
+        }
 
         private readonly TableStorageController _tsc;
 
@@ -39,7 +40,29 @@ namespace ET
 
         public void Run()
         {
-            Console.WriteLine("RUN!");
+            var _mmRun = true;
+            Console.CancelKeyPress += new ConsoleCancelEventHandler((obj, evArgs) =>
+            {
+                evArgs.Cancel = !(_mmRun = false);
+            });
+
+            Console.WriteLine("Monitoring; press CTRL+C to end.");
+            Console.WriteLine("");
+            
+            while (_mmRun)
+            {
+                var qList = _tsc.QueryAll();
+
+                foreach (TableStorageEntity tse in qList.Result)
+                {
+                    Console.WriteLine($"TSE! {tse.PartitionKey} {tse.RowKey} {tse.Data}");
+                }
+                
+                Thread.Sleep(1000);
+            }
+
+            Console.WriteLine("");
+            Console.WriteLine("Done monitoring; exiting.");
         }
     }
 }

@@ -1,11 +1,8 @@
 ﻿using System;
-using System.Security.Cryptography;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
-using ET.Config;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
-using Microsoft.IdentityModel.Protocols;
 using Microsoft.Extensions.Configuration;
+using ET.Config;
 
 namespace ET.Controllers
 {
@@ -48,8 +45,6 @@ namespace ET.Controllers
             _tsc = new TableStorageController(_appConfig, _azConfig.Storage);
             _keyVault = keyVault as KeyVault;
 
-            Console.Error.WriteLine($"V1Controller has mode {_appConfig["ASPNETCORE_ENVIRONMENT"]}");
-
 #if DEBUG
             if (!Guid.TryParse(_azConfig.AppId, out _appGuid))
             {
@@ -61,7 +56,7 @@ namespace ET.Controllers
         [HttpPost]
         public void Post([FromBody] APIv1Post value)
         {
-            var okToPost = true;// WHYCANTIGETDEVMODEONDEPLOY!?!?! false;
+            var okToPost = true;// TODO: WHYCANTIGETDEVMODEONDEPLOY!?!?! false;
 
             try
             {

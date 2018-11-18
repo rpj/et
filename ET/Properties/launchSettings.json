@@ -9,14 +9,6 @@
   },
   "$schema": "http://json.schemastore.org/launchsettings.json",
   "profiles": {
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "environmentVariables": {
-        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONENABLED": "true",
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONVAULT": "https://ET-0-kv.vault.azure.net"
-      }
-    },
     "ET": {
       "commandName": "Project",
       "environmentVariables": {
@@ -38,10 +30,22 @@
     "ET - Monitor": {
       "commandName": "Project",
       "commandLineArgs": "-- monitor",
+      "console": "externalTerminal",
       "environmentVariables": {
         "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONENABLED": "true",
         "ET_RUN_MONITOR": "1",
         "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONVAULT": "https://ET-0-kv.vault.azure.net"
+      }
+    },
+    "ET - Monitor Release": {
+      "commandName": "Project",
+      "commandLineArgs": "-- monitor",
+      "console": "externalTerminal",
+      "environmentVariables": {
+        "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONENABLED": "true",
+        "ET_RUN_MONITOR": "1",
+        "ASPNETCORE_ENVIRONMENT": "Release",
         "ASPNETCORE_HOSTINGSTARTUP__KEYVAULT__CONFIGURATIONVAULT": "https://ET-0-kv.vault.azure.net"
       }
     }

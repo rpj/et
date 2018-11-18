@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Net;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -20,6 +22,10 @@ namespace ET.Controllers
             PartitionKey = entityId.ToString();
             RowKey = (Timestamp.Ticks - Epoch.Ticks).ToString();
         }
+
+        // a default, no-argument ctor is required to use this class 
+        // as the generic type 'T' of TableQuery<T>
+        public TableStorageEntity() { }
         
         public DateTime PostTime { get; set; }
         public string Data { get; set; }
@@ -40,15 +46,11 @@ namespace ET.Controllers
             }
 
 #if DEBUG
-            Console.Error.WriteLine($"ConnectionString: {connStr}");
-            Console.Error.WriteLine($"TableName: {azConfig.Table.Name}");
+            Console.Error.WriteLine("TableStorageController initialized with the following parameters:");
+            Console.Error.WriteLine($"\tTableName: {azConfig.Table.Name}");
+            Console.Error.WriteLine($"\tConnectionString: {connStr}");
 #endif
             Init(connStr, azConfig.Table.Name);
-        }
-
-        public TableStorageController(string connStr, string tableName)
-        {
-            Init(connStr, tableName);
         }
 
         private async void Init(string connectionString, string tableName)
@@ -65,6 +67,16 @@ namespace ET.Controllers
             {
                 throw new Exception($"Bad 'add': {tRes.HttpStatusCode}");
             }
+        }
+
+        public async Task<TableQuerySegment<TableStorageEntity>> QueryAll()
+        {
+            var query = new TableQuery<TableStorageEntity>();
+
+            var tct = new TableContinuationToken();
+            var qRes = await _tableRef.ExecuteQuerySegmentedAsync(query, tct);
+
+            return qRes;
         }
     }
 }
