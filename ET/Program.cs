@@ -15,6 +15,8 @@ namespace ET
 
         public static void Main(string[] args)
         {
+            Action runLambda = null;
+
             if ((args.Length > 0 && args[0] == "monitor") ||
                 Environment.GetEnvironmentVariable("ET_RUN_MONITOR") == "1")
             {
@@ -40,12 +42,21 @@ namespace ET
                     .Configure<AzureConfig>(configuration.GetSection("Azure"))
                     .BuildServiceProvider();
 
-                svcProv.GetService<IMonitorMode>().Run();
+                runLambda = () => { svcProv.GetService<IMonitorMode>().Run(); };
             }
             else
             {
-                CreateWebHostBuilder(args).Build().Run();
+                runLambda = () => { CreateWebHostBuilder(args).Build().Run(); };
             }
+            
+#if DEBUG
+            Console.WriteLine("DEBUG is enabled");
+#endif
+
+            if (runLambda != null)
+                runLambda();
+            else
+                throw new Exception("Ended without anything to run!");
         }
 
         private static IWebHostBuilder CreateWebHostBuilder(string[] args) =>
