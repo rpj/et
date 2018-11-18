@@ -7,10 +7,6 @@ using ET.Controllers;
 
 namespace ET
 {
-    public interface IMonitorMode
-    {
-        void Run();
-    }
 
     public class MonitorMode : IMonitorMode
     {

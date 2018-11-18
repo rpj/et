@@ -6,14 +6,6 @@ using ET.Config;
 
 namespace ET.Controllers
 {
-    [Serializable]
-    public struct APIv1Post
-    {
-        public Guid Id;
-        public DateTime Timestamp;
-        public string Data;
-    }
-
     [Route("api/[controller]")]
     [ApiController]
     public class V1Controller : ControllerBase

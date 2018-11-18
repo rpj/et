@@ -9,12 +9,6 @@ using Newtonsoft.Json;
 
 namespace ET.Controllers
 {
-    public interface IRedisController
-    {
-        void Publish(ISerializable publishObject);
-        void Subscribe(IChannelSubscriber channelSubscriber);
-    }
-
     public class RedisController : IRedisController
     {
         private readonly List<IChannelSubscriber> _subs = new List<IChannelSubscriber>();

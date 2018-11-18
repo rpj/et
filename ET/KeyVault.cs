@@ -11,11 +11,6 @@ using Microsoft.Extensions.Configuration.AzureKeyVault;
 
 namespace ET
 {
-    public interface IKeyVault
-    {
-        void AddKeyVaultToBuilder(IConfigurationBuilder config);
-    }
-
     public class KeyVault : IKeyVault
     {
         public class Key

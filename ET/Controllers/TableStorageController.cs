@@ -10,33 +10,6 @@ using Newtonsoft.Json;
 
 namespace ET.Controllers
 {
-    [Serializable]
-    public class TableStorageEntity : TableEntity
-    {
-        private static readonly DateTime Epoch = new DateTime(2018, 1, 1);
-
-        public TableStorageEntity(Guid entityId, DateTime timestamp)
-        {
-            PostTime = timestamp;
-            Timestamp = DateTime.UtcNow;
-            PartitionKey = entityId.ToString();
-            RowKey = (Timestamp.Ticks - Epoch.Ticks).ToString();
-        }
-
-        // a default, no-argument ctor is required to use this class 
-        // as the generic type 'T' of TableQuery<T>
-        public TableStorageEntity() { }
-
-        public TableStorageEntity(string pKey, string rKey)
-        {
-            PartitionKey = pKey;
-            RowKey = rKey;
-        }
-
-        public DateTime PostTime { get; set; }
-        public string Data { get; set; }
-    }
-
     public delegate void TableStorageRowMonitorDelegate(TableStorageEntity newRow);
 
     public class TableStorageController : ControllerBase
