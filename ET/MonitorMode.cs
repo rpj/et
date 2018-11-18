@@ -21,7 +21,7 @@ namespace ET
             var storageConfig = azConfig.Value.Storage;
             Console.WriteLine($"Connecting to table '{storageConfig.Table.Name}' " +
                 $"at DB specified by vault secret '{storageConfig.ConnectionStringSecretName}'...");
-            _tsc = new TableStorageController(appConfig, storageConfig);
+            _tsc = new TableStorageController(appConfig, storageConfig, redis);
         }
 
         public void Run()
@@ -34,16 +34,14 @@ namespace ET
 
             Console.WriteLine("Monitoring; press CTRL+C to end.");
             Console.WriteLine("");
+
+            _tsc.MonitorNewRows((newRow) =>
+            {
+                Console.WriteLine($"New Row! {newRow.PartitionKey} {newRow.RowKey}");
+            });
             
             while (_mmRun)
             {
-                var qList = _tsc.QueryAll();
-
-                foreach (TableStorageEntity tse in qList.Result)
-                {
-                    Console.WriteLine($"TSE! {tse.PartitionKey} {tse.RowKey} {tse.Data}");
-                }
-                
                 Thread.Sleep(1000);
             }
 
