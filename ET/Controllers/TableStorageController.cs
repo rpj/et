@@ -45,23 +45,24 @@ namespace ET.Controllers
             await _tableRef.CreateIfNotExistsAsync();
         }
 
-        public async void Add(TableStorageEntity newEntity)
+        public async Task<TableResult> Add(TableStorageEntity newEntity)
         {
             var tRes = await _tableRef.ExecuteAsync(TableOperation.Insert(newEntity));
 
-            if (!(tRes.HttpStatusCode < (int)HttpStatusCode.Ambiguous))
+            if (tRes.HttpStatusCode < (int) HttpStatusCode.Ambiguous)
             {
-                throw new Exception($"Bad 'add': {tRes.HttpStatusCode}");
-            }
-
-            if (_redisController != null)
-            {
-                _redisController.Publish(new Dictionary<string, string>
+                _redisController?.Publish(new Dictionary<string, string>
                 {
-                    { TableStorageEntity.PartitionKeyName, newEntity.PartitionKey },
-                    { TableStorageEntity.RowKeyName, newEntity.RowKey }
+                    {TableStorageEntity.PartitionKeyName, newEntity.PartitionKey},
+                    {TableStorageEntity.RowKeyName, newEntity.RowKey}
                 });
             }
+            else
+            {
+                Console.Error.WriteLine($"Bad 'add': {tRes.HttpStatusCode}");
+            }
+
+            return tRes;
         }
 
         public bool MonitorNewRows(TableStorageRowMonitorDelegate monitorDelegate)

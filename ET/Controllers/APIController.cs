@@ -1,8 +1,11 @@
 ﻿using System;
+using System.IO;
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Configuration;
 using ET.Config;
+using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 
 namespace ET.Controllers
 {
@@ -21,6 +24,7 @@ namespace ET.Controllers
         [HttpGet("{plaintext}")]
         public void Get(string plaintext)
         {
+            Console.WriteLine($"GET '{plaintext}'");
             Post(new APIv1Post()
             {
                 Id = _appGuid,
@@ -49,11 +53,16 @@ namespace ET.Controllers
         [HttpPost]
         public void Post([FromBody] APIv1Post value)
         {
-            _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
+            Console.WriteLine($"POST '{value.Id}' '{value.Timestamp}'");
+
+            var addResult = _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
             {
                 Data = value.Data
             });
-        }
 
+            var tableRes = addResult.Result;
+            Response.StatusCode = tableRes.HttpStatusCode;
+            Console.WriteLine($"POST RESULT {Response.StatusCode}");
+        }
     }
 }

@@ -15,6 +15,7 @@ namespace ET
     {
         public class Key
         {
+            public static readonly Encoding Encoding = Encoding.UTF8;
             public string Name { get; }
             public string Version { get; }
 
@@ -34,7 +35,7 @@ namespace ET
             public async Task<string> Decrypt(byte[] cBytes)
             {
                 var decRes = await _vault._client.DecryptWithHttpMessagesAsync(_vault._uri, Name, Version, "RSA1_5", cBytes);
-                return Encoding.Unicode.GetString(decRes.Body.Result);
+                return Encoding.GetString(decRes.Body.Result);
             }
 
             public string Encrypt(string plainText)
@@ -42,7 +43,7 @@ namespace ET
                 using (var rsp = new RSACryptoServiceProvider())
                 {
                     rsp.ImportParameters(_rsaParams);
-                    return Convert.ToBase64String(rsp.Encrypt(Encoding.Unicode.GetBytes(plainText), false));
+                    return Convert.ToBase64String(rsp.Encrypt(Encoding.GetBytes(plainText), false));
                 }
             }
 

@@ -56,12 +56,6 @@ namespace ET
         // as the generic type 'T' of TableQuery<T>
         public TableStorageEntity() { }
 
-        public TableStorageEntity(string pKey, string rKey)
-        {
-            PartitionKey = pKey;
-            RowKey = rKey;
-        }
-
         public DateTime PostTime { get; set; }
         public string Data { get; set; }
     }
