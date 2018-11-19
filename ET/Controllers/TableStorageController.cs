@@ -15,7 +15,6 @@ namespace ET.Controllers
 
     public class TableStorageController : ControllerBase
     {
-
         private CloudTable _tableRef;
         private readonly IRedisController _redisController;
 
@@ -59,8 +58,8 @@ namespace ET.Controllers
             {
                 _redisController.Publish(new Dictionary<string, string>
                 {
-                    { "ParitionKey", newEntity.PartitionKey },
-                    { "RowKey", newEntity.RowKey }
+                    { TableStorageEntity.PartitionKeyName, newEntity.PartitionKey },
+                    { TableStorageEntity.RowKeyName, newEntity.RowKey }
                 });
             }
         }
@@ -82,9 +81,11 @@ namespace ET.Controllers
         {
             var tQuery = new TableQuery<TableStorageEntity>().
                 Where(TableQuery.CombineFilters(
-                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, partitionKey),
+                    TableQuery.GenerateFilterCondition(
+                        TableStorageEntity.PartitionKeyName, QueryComparisons.Equal, partitionKey),
                     TableOperators.And,
-                    TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, rowKey)));
+                    TableQuery.GenerateFilterCondition(
+                        TableStorageEntity.RowKeyName, QueryComparisons.Equal, rowKey)));
 
             return await _tableRef.ExecuteQuerySegmentedAsync(tQuery, new TableContinuationToken());
         }
@@ -104,10 +105,14 @@ namespace ET.Controllers
             {
                 var dObj = ((Newtonsoft.Json.Linq.JObject)JsonConvert.DeserializeObject(message))
                     .ToObject<Dictionary<string, string>>();
-                var rowList = _tsc.LookupRow(dObj["PartitionKey"], dObj["RowKey"]).Result.Results;
-                
+                var rowList = _tsc.LookupRow(dObj[TableStorageEntity.PartitionKeyName], 
+                    dObj[TableStorageEntity.RowKeyName]).Result.Results;
+
+                if (rowList.Count == 0)
+                    throw new Exception($"No row found for ({channel}, {message})!");
+
                 if (rowList.Count > 1)
-                    throw new Exception($"How is this even possible?!");
+                    throw new Exception($"How is this even possible ({channel}, {message})?!");
 
                 _md(rowList[0]);
             }

@@ -40,7 +40,9 @@ namespace ET
     [Serializable]
     public class TableStorageEntity : TableEntity
     {
-        private static readonly DateTime Epoch = new DateTime(2018, 1, 1);
+        public static readonly string PartitionKeyName = "PartitionKey";
+        public static readonly string RowKeyName = "RowKey";
+        public static readonly DateTime Epoch = new DateTime(2018, 1, 1);
 
         public TableStorageEntity(Guid entityId, DateTime timestamp)
         {

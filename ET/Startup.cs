@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using ET.Config;
+using ET.Controllers;
 
 namespace ET
 {
@@ -20,7 +21,8 @@ namespace ET
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
-            services.Configure<AzureConfig>(Configuration.GetSection("Azure"));
+            services.AddSingleton<IRedisController, RedisController>()
+                .Configure<AzureConfig>(Configuration.GetSection("Azure"));
         }
         
         public void Configure(IApplicationBuilder app, IHostingEnvironment env)

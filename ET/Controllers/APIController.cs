@@ -15,7 +15,7 @@ namespace ET.Controllers
         private readonly KeyVault _keyVault;
         private readonly IConfiguration _appConfig;
 
-#if DEBUG
+//#if DEBUG
         private readonly Guid _appGuid;
 
         [HttpGet("{plaintext}")]
@@ -28,52 +28,31 @@ namespace ET.Controllers
                 Data = _keyVault[_azConfig.KeyVault.DefaultKeyName].Encrypt(plaintext)
             });
         }
-#endif
+//#endif
 
-        public V1Controller(IConfiguration appConfig, IOptions<AzureConfig> config, IKeyVault keyVault)
+        public V1Controller(IConfiguration appConfig, IOptions<AzureConfig> config, 
+            IKeyVault keyVault, IRedisController redis)
         {
             _azConfig = config.Value;
             _appConfig = appConfig;
-            _tsc = new TableStorageController(_appConfig, _azConfig.Storage);
+            _tsc = new TableStorageController(_appConfig, _azConfig.Storage, redis);
             _keyVault = keyVault as KeyVault;
 
-#if DEBUG
+//#if DEBUG
             if (!Guid.TryParse(_azConfig.AppId, out _appGuid))
             {
                 throw new Exception();
             }
-#endif
+//#endif
         }
 
         [HttpPost]
         public void Post([FromBody] APIv1Post value)
         {
-            var okToPost = true;// TODO: WHYCANTIGETDEVMODEONDEPLOY!?!?! false;
-
-            try
+            _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
             {
-                // try to convert, ignoring the result, as we only care
-                // whether the data is valid Base64 or not (and not *what* the data is
-                // as if it *is* encoded it should also be encrypted!)
-                okToPost = Convert.FromBase64String(value.Data).Length != 0;
-            }
-            catch (FormatException)
-            {
-            }
-
-            if (okToPost || _appConfig["ASPNETCORE_ENVIRONMENT"] == "Development")
-            {
-                if (!okToPost)
-                {
-                    Console.Error.WriteLine($"WARNING: Posting unencrypted data in 'Development' mode!");
-                    Console.Error.WriteLine($"DATA:\n{value.Data}");
-                }
-
-                _tsc.Add(new TableStorageEntity(value.Id, value.Timestamp)
-                {
-                    Data = value.Data
-                });
-            }
+                Data = value.Data
+            });
         }
 
     }

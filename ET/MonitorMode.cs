@@ -7,7 +7,6 @@ using ET.Controllers;
 
 namespace ET
 {
-
     public class MonitorMode : IMonitorMode
     {
         private readonly TableStorageController _tsc;
